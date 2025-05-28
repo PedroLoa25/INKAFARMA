@@ -1,9 +1,12 @@
-import java.util.*;
+import java.util.Scanner;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class EXA {
+public class INKAFARMA{
 
-    static Scanner papu = new Scanner(System.in);
+    static Scanner scanner = new Scanner(System.in);
+
     static String correoRegistrado = "";
     static String contraseñaRegistrada = "";
     static String dniRegistrado = "";
@@ -11,630 +14,576 @@ public class EXA {
     static String claveTarjeta = "";
     static String nombreRegistrado = "";
 
-    static class Producto {
-        String nombre;
-        String marca;
-        double precio;
-        int stock;
+    static int totalComprasRealizadas = 0;
+    static boolean sesionIniciada = false;
 
-        Producto(String nombre, String marca, double precio, int stock) {
-            this.nombre = nombre;
-            this.marca = marca;
-            this.precio = precio;
-            this.stock = stock;
-        }
-
-        boolean esIgual(Producto otro) {
-            if (otro == null) return false;
-            return this.nombre.equals(otro.nombre) && this.marca.equals(otro.marca);
-        }
-    }
-
-    static Producto[] productosMamaBebe = {
-            new Producto("Pañales Talla M", "Huggies", 45.90, 10),
-            new Producto("Toallitas húmedas", "Pampers", 6.50, 15),
-            new Producto("Leche NAN Pro 1", "Ninet", 89.00, 8),
-            new Producto("Shampoo para bebé", "Johnson’s", 12.90, 20),
-            new Producto("Pañales Talla S", "Babysec", 38.90, 10),
-            new Producto("Jabón líquido", "Johnson’s", 15.50, 15),
-            new Producto("Pañales XG", "Pampers", 59.00, 5),
-            new Producto("Toallitas húmedas extra", "Babysec", 7.80, 12),
-            new Producto("Crema protectora", "Huggies", 13.40, 8),
-            new Producto("Leche infantil 2+", "Ninet", 94.90, 6)
+    static String[] nombresProductos = {
+            "Pañales Talla M", "Pañales Talla G",
+            "Toallitas Húmedas Regular", "Toallitas Húmedas Sensitive",
+            "Leche NAN Pro 1 Pequeña", "Leche NAN Pro 1 Grande",
+            "Shampoo para bebé Suave", "Crema Corporal Bebé Humectante"
     };
 
-    static Producto[] productosEnOferta = {
-            new Producto("Fórmula Etapa 1 Lata", "Similac", 75.50, 5),
-            new Producto("Biberón Anticólicos", "Avent", 25.00, 10),
-            new Producto("Cereal Infantil Trigo y Miel", "Nestum", 18.90, 8),
-            new Producto("Colonia para Bebé Hipoalergénica", "Mustela", 35.20, 12),
-            new Producto("Chupón Anatómico 0-6m", "Nuk", 15.00, 20)
+    static String[] marcasProductos = {
+            "Huggies", "Huggies",
+            "Pampers", "Pampers",
+            "Ninet", "Ninet",
+            "Johnson’s", "Johnson’s"
     };
 
+    static double[] preciosProductos = {
+            45.90, 55.00,
+            6.50, 8.00,
+            89.00, 150.00,
+            12.90, 25.00
+    };
 
-    static final int MAX_CARRITO_ITEMS = 50;
-    static Producto[] carrito = new Producto[MAX_CARRITO_ITEMS];
-    static int numeroItemsEnCarrito = 0;
+    static final int MAMA_BEBE_INICIO = 0;
+    static final int MAMA_BEBE_FIN = 7;
 
-    static int leerEnteroSimple(String prompt) {
-        String entrada;
-        while (true) {
-            System.out.print(prompt);
-            entrada = papu.nextLine().trim();
-            if (entrada.isEmpty()) {
-                System.out.println("❌ Entrada no puede estar vacía. Intente nuevamente.");
-                continue;
-            }
+    static final int MAX_ITEMS_CARRITO = 20;
 
-            boolean esValido = true;
-            boolean esNegativo = false;
-            int indiceInicio = 0;
+    static String[] carritoNombres = new String[MAX_ITEMS_CARRITO];
+    static String[] carritoMarcas = new String[MAX_ITEMS_CARRITO];
+    static double[] carritoPreciosUnitarios = new double[MAX_ITEMS_CARRITO];
+    static int[] carritoCantidades = new int[MAX_ITEMS_CARRITO];
 
-            if (entrada.charAt(0) == '-') {
-                if (entrada.length() == 1) {
-                    esValido = false;
-                } else {
-                    esNegativo = true;
-                    indiceInicio = 1;
-                }
-            } else if (entrada.charAt(0) == '+') {
-                if (entrada.length() == 1) {
-                    esValido = false;
-                } else {
-                    indiceInicio = 1;
-                }
-            }
-
-            if (!esValido) {
-                System.out.println("❌ Entrada inválida. Ingrese un número válido.");
-                continue;
-            }
-
-            long numeroLargo = 0;
-            for (int i = indiceInicio; i < entrada.length(); i++) {
-                char c = entrada.charAt(i);
-                if (c < '0' || c > '9') {
-                    esValido = false;
-                    break;
-                }
-                numeroLargo = numeroLargo * 10 + (c - '0');
-                if (esNegativo && -numeroLargo < Integer.MIN_VALUE) {
-                    esValido = false; break;
-                }
-                if (!esNegativo && numeroLargo > Integer.MAX_VALUE) {
-                    esValido = false; break;
-                }
-            }
-
-            if (esValido) {
-                if (esNegativo) {
-                    numeroLargo = -numeroLargo;
-                }
-                if (numeroLargo > Integer.MAX_VALUE || numeroLargo < Integer.MIN_VALUE) {
-                    System.out.println("❌ Número fuera del rango permitido (int). Intente nuevamente.");
-                    continue;
-                }
-                return (int) numeroLargo;
-            } else {
-                System.out.println("❌ Entrada inválida. Ingrese solo dígitos numéricos (opcionalmente un signo al inicio) o número demasiado grande/pequeño.");
-            }
-        }
-    }
-
-    static double leerDoubleSimple(String prompt) {
-        String entrada;
-        while (true) {
-            System.out.print(prompt);
-            entrada = papu.nextLine().trim();
-            if (entrada.isEmpty()) {
-                System.out.println("❌ Entrada no puede estar vacía. Intente nuevamente.");
-                continue;
-            }
-
-            boolean esValido = true;
-            boolean puntoEncontrado = false;
-            boolean esNegativo = false;
-            int indiceInicio = 0;
-
-            if (entrada.charAt(0) == '-') {
-                if (entrada.length() == 1) { esValido = false; }
-                else { esNegativo = true; indiceInicio = 1; }
-            } else if (entrada.charAt(0) == '+') {
-                if (entrada.length() == 1) { esValido = false; }
-                else { indiceInicio = 1; }
-            }
-
-            if (!esValido) {
-                System.out.println("❌ Formato numérico inválido. Intente nuevamente.");
-                continue;
-            }
-
-
-            for (int i = indiceInicio; i < entrada.length(); i++) {
-                char c = entrada.charAt(i);
-                if (c >= '0' && c <= '9') {
-                } else if (c == '.') {
-                    if (puntoEncontrado || i == indiceInicio || i == entrada.length() - 1) {
-                        esValido = false;
-                        break;
-                    }
-                    puntoEncontrado = true;
-                } else {
-                    esValido = false;
-                    break;
-                }
-            }
-            if (entrada.substring(indiceInicio).equals(".")) {
-                esValido = false;
-            }
-
-
-            if (esValido) {
-                double resultado = 0.0;
-                double parteEntera = 0.0;
-                double parteDecimal = 0.0;
-                int j = indiceInicio;
-
-                while (j < entrada.length() && entrada.charAt(j) != '.') {
-                    parteEntera = parteEntera * 10 + (entrada.charAt(j) - '0');
-                    j++;
-                }
-                resultado = parteEntera;
-
-                if (j < entrada.length() && entrada.charAt(j) == '.') {
-                    j++;
-                    double factor = 0.1;
-                    while (j < entrada.length()) {
-                        parteDecimal = parteDecimal + (entrada.charAt(j) - '0') * factor;
-                        factor /= 10;
-                        j++;
-                    }
-                    resultado += parteDecimal;
-                }
-                if (esNegativo) {
-                    resultado = -resultado;
-                }
-                return resultado;
-
-            } else {
-                System.out.println("❌ Formato numérico inválido. Use números como 123 o 12.34 (opcionalmente con signo).");
-            }
-        }
-    }
-
+    static int numeroTiposUnicosEnCarrito = 0;
 
     public static void main(String[] args) {
+        System.out.println("=== ¡Bienvenido a INKAFARMA! ===");
         registrarUsuario();
         if (iniciarSesion()) {
+            sesionIniciada = true;
+            System.out.println("✅ Sesión iniciada correctamente. ¡Bienvenido/a " + nombreRegistrado + "!");
             mostrarOfertas();
             menuPrincipal();
+        } else {
+            System.out.println("Demasiados intentos fallidos. Saliendo de la aplicación.");
         }
+        scanner.close();
     }
 
     public static void registrarUsuario() {
-        System.out.println("=== Registro de Usuario ===");
+        System.out.println("\n=== Registro de Usuario ===");
         System.out.print("Ingrese su nombre completo: ");
-        nombreRegistrado = papu.nextLine();
+        nombreRegistrado = scanner.nextLine();
 
         while (true) {
             System.out.print("Ingrese su correo electrónico: ");
-            correoRegistrado = papu.nextLine();
-            if (correoRegistrado.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) break;
-            System.out.println("❌ Correo inválido. Intente nuevamente.");
+            correoRegistrado = scanner.nextLine().trim();
+            Pattern emailPattern = Pattern.compile("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$");
+            Matcher emailMatcher = emailPattern.matcher(correoRegistrado);
+            if (emailMatcher.matches()) {
+                break;
+            }
+            System.out.println("❌ Formato de correo inválido. Intente nuevamente (ej. usuario@dominio.com).");
         }
 
         while (true) {
             System.out.print("Ingrese una contraseña (mínimo 8 caracteres, al menos una mayúscula, un número y un símbolo): ");
-            contraseñaRegistrada = papu.nextLine();
-            if (contraseñaRegistrada.matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&()_+\\-={}\\[\\]|:;\"'<>,.?/]).{8,}$")) break;
-            System.out.println("❌ Contraseña insegura. Intente nuevamente.");
+            contraseñaRegistrada = scanner.nextLine();
+            Pattern passwordPattern = Pattern.compile("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&()_+\\-={}\\[\\]|:;\"'<>,.?/]).{8,}$");
+            Matcher passwordMatcher = passwordPattern.matcher(contraseñaRegistrada);
+            if (passwordMatcher.matches()) {
+                break;
+            }
+            System.out.println("❌ Contraseña insegura. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.");
         }
 
         while (true) {
             System.out.print("Ingrese DNI de 8 dígitos: ");
-            dniRegistrado = papu.nextLine();
-            if (dniRegistrado.matches("^\\d{8}$")) break;
+            dniRegistrado = scanner.nextLine();
+            Pattern dniPattern = Pattern.compile("^\\d{8}$");
+            Matcher dniMatcher = dniPattern.matcher(dniRegistrado);
+            if (dniMatcher.matches()) {
+                break;
+            }
             System.out.println("❌ El DNI debe tener exactamente 8 dígitos numéricos.");
         }
 
         while (true) {
             System.out.print("Ingrese número de tarjeta (16 dígitos): ");
-            tarjetaRegistrada = papu.nextLine();
-            if (tarjetaRegistrada.matches("^\\d{16}$")) break;
-            System.out.println("❌ La tarjeta debe tener exactamente 16 dígitos.");
+            tarjetaRegistrada = scanner.nextLine();
+            Pattern tarjetaPattern = Pattern.compile("^\\d{16}$");
+            Matcher tarjetaMatcher = tarjetaPattern.matcher(tarjetaRegistrada);
+            if (tarjetaMatcher.matches()) {
+                break;
+            }
+            System.out.println("❌ La tarjeta debe tener exactamente 16 dígitos numéricos.");
         }
 
         while (true) {
             System.out.print("Cree una clave para su tarjeta (4 dígitos): ");
-            claveTarjeta = papu.nextLine();
-            if (claveTarjeta.matches("^\\d{4}$")) break;
-            System.out.println("❌ La clave debe tener exactamente 4 dígitos.");
+            claveTarjeta = scanner.nextLine();
+            Pattern clavePattern = Pattern.compile("^\\d{4}$");
+            Matcher claveMatcher = clavePattern.matcher(claveTarjeta);
+            if (claveMatcher.matches()) {
+                break;
+            }
+            System.out.println("❌ La clave debe tener exactamente 4 dígitos numéricos.");
         }
         System.out.println("✅ Registro exitoso.\n");
     }
 
     static boolean iniciarSesion() {
-        System.out.println("\nInicio de sesión");
-        for (int intentos = 0; intentos < 3; intentos++) {
+        System.out.println("\n=== Inicio de Sesión ===");
+        int intentos = 0;
+        do {
             System.out.print("Correo: ");
-            String correo = papu.nextLine();
+            String correo = scanner.nextLine().trim();
             System.out.print("Contraseña: ");
-            String contraseña = papu.nextLine();
+            String contraseña = scanner.nextLine();
 
             if (correo.equals(correoRegistrado) && contraseña.equals(contraseñaRegistrada)) {
                 return true;
             } else {
-                System.out.println("Correo o contraseña incorrectos. Intento " + (intentos + 1) + " de 3.");
+                intentos++;
+                System.out.println("❌ Correo o contraseña incorrectos. Intento " + intentos + " de 3.");
             }
-        }
+        } while (intentos < 3);
         return false;
     }
 
     public static void mostrarOfertas() {
-        System.out.println("🎉 ¡Bienvenido/a a Inkafarma! Ofertas especiales disponibles.");
+        System.out.println("\n=== OFERTAS DEL DÍA ===");
+        Random random = new Random();
+        int indiceOferta = random.nextInt(MAMA_BEBE_FIN - MAMA_BEBE_INICIO + 1) + MAMA_BEBE_INICIO;
 
-        if (productosEnOferta != null && productosEnOferta.length > 0) {
-            Random random = new Random();
-            int indiceAleatorio = random.nextInt(productosEnOferta.length); 
-            Producto ofertaDelDia = productosEnOferta[indiceAleatorio];
+        String nombreOferta = nombresProductos[indiceOferta];
+        String marcaOferta = marcasProductos[indiceOferta];
+        double precioRegular = preciosProductos[indiceOferta];
+        double precioOferta = precioRegular * 0.80;
 
-            System.out.println("\n✨ ¡OFERTA DEL DÍA! ✨");
-            System.out.println("------------------------------------");
-            System.out.println("Producto: " + ofertaDelDia.nombre);
-            System.out.println("Marca: " + ofertaDelDia.marca);
-            System.out.println("Precio Especial: S/ " + String.format("%.2f", ofertaDelDia.precio));
-            System.out.println("Stock limitado: " + ofertaDelDia.stock + " unidades");
-            System.out.println("------------------------------------");
-        }
-        else {
-            System.out.println("No hay ofertas especiales por el momento.");
-        }
+        System.out.println("🎉 ¡No te pierdas nuestra Oferta del Día! 🎉");
+        System.out.println("Producto: " + nombreOferta + " (" + marcaOferta + ")");
+        System.out.println("Precio regular: S/ " + String.format("%.2f", precioRegular));
+        System.out.println("¡Precio de OFERTA: S/ " + String.format("%.2f", precioOferta) + "!");
+        System.out.println("------------------------------------");
+        System.out.println("Esta oferta es solo una muestra. Puedes encontrar más productos en las categorías.");
     }
 
     public static void menuPrincipal() {
-        while (true) {
-            System.out.println("\n=== Menú Principal ===");
-            System.out.println("1. Categorías");
-            System.out.println("2. Ver carrito");
-            System.out.println("3. Finalizar compra");
-            System.out.println("4. Salir");
-
-            int opcion = leerEnteroSimple("Seleccione una opción: ");
+        int opcion;
+        do {
+            System.out.println("\n=== MENÚ PRINCIPAL ===");
+            System.out.println("1. Ver Categorías");
+            System.out.println("2. Salir");
+            System.out.print("Ingrese su opción: ");
+            opcion = Integer.parseInt(scanner.nextLine().trim());
 
             switch (opcion) {
                 case 1:
                     menuCategorias();
                     break;
                 case 2:
-                    verCarrito();
+                    System.out.println("Gracias por su preferencia. ¡Vuelva pronto!");
                     break;
-                case 3:
-                    finalizarCompra();
-                    break;
-                case 4:
-                    System.out.println("Gracias por usar Inkafarma App. ¡Hasta luego!");
-                    return;
                 default:
-                    System.out.println("❌ Opción inválida.");
+                    System.out.println("❌ Opción inválida. Por favor, intente de nuevo.");
             }
-        }
+        } while (opcion != 2);
     }
 
     public static void menuCategorias() {
-        while (true) {
-            System.out.println("\n--- Categorías ---");
-            System.out.println("1. Mamá y Bebé");
-            System.out.println("2. Inka Packs (no disponible)");
-            System.out.println("3. Salud (no disponible)");
-            System.out.println("4. Productos Naturales (no disponible)");
-            System.out.println("5. Nutrición para Todos (no disponible)");
-            System.out.println("6. Volver al menú principal");
+        int opcion;
+        do {
+            System.out.println("\n=== CATEGORÍAS ===");
+            System.out.println("1. Salud");
+            System.out.println("2. Productos Naturales");
+            System.out.println("3. Nutrición para Todos");
+            System.out.println("4. Mamá y Bebé");
+            System.out.println("5. Atrás (Volver al Menú Principal)");
+            System.out.print("Ingrese su opción: ");
+            opcion = Integer.parseInt(scanner.nextLine().trim());
 
-            int opcion = leerEnteroSimple("Seleccione una categoría: ");
-
-            if (opcion == 1) mostrarFiltradoMamaBebe();
-            else if (opcion == 6) break;
-            else if (opcion >=2 && opcion <=5) System.out.println("❌ Categoría aún no disponible.");
-            else System.out.println("❌ Opción inválida.");
-        }
-    }
-
-    public static void mostrarFiltradoMamaBebe() {
-        while (true) {
-            System.out.println("\n--- Mamá y Bebé ---");
-            System.out.println("1. Ver todos");
-            System.out.println("2. Filtrar por marca");
-            System.out.println("3. Filtrar por precio (intervalo)");
-            System.out.println("4. Volver");
-
-            int opcion = leerEnteroSimple("Seleccione opción: ");
-
-            if (opcion == 1) mostrarYAgregar(productosMamaBebe, productosMamaBebe.length);
-            else if (opcion == 2) filtrarPorMarca();
-            else if (opcion == 3) filtrarPorPrecio();
-            else if (opcion == 4) break;
-            else System.out.println("❌ Opción inválida.");
-        }
-    }
-
-    public static void filtrarPorMarca() {
-        String[] marcasUnicas = new String[productosMamaBebe.length];
-        int contadorMarcasUnicas = 0;
-
-        for (int i = 0; i < productosMamaBebe.length; i++) {
-            boolean encontrada = false;
-            for (int j = 0; j < contadorMarcasUnicas; j++) {
-                if (productosMamaBebe[i].marca.equals(marcasUnicas[j])) {
-                    encontrada = true;
+            switch (opcion) {
+                case 1:
+                    System.out.println("\n=== Categoría: Salud ===");
+                    System.out.println("Esta categoría está actualmente en desarrollo. ¡Pronto tendremos más productos!");
                     break;
-                }
+                case 2:
+                    System.out.println("\n=== Categoría: Productos Naturales ===");
+                    System.out.println("Esta categoría está actualmente en desarrollo. ¡Pronto tendremos más productos!");
+                    break;
+                case 3:
+                    System.out.println("\n=== Categoría: Nutrición para Todos ===");
+                    System.out.println("Esta categoría está actualmente en desarrollo. ¡Pronto tendremos más productos!");
+                    break;
+                case 4:
+                    menuMamaBebe();
+                    break;
+                case 5:
+                    System.out.println("Volviendo a Categorías...");
+                    break;
+                default:
+                    System.out.println("❌ Opción inválida. Por favor, intente de nuevo.");
             }
-            if (!encontrada) {
-                marcasUnicas[contadorMarcasUnicas] = productosMamaBebe[i].marca;
-                contadorMarcasUnicas++;
-            }
-        }
-
-        System.out.println("\nMarcas disponibles:");
-        for (int i = 0; i < contadorMarcasUnicas; i++) {
-            System.out.println((i + 1) + ". " + marcasUnicas[i]);
-        }
-        if (contadorMarcasUnicas == 0) {
-            System.out.println("No hay marcas disponibles.");
-            return;
-        }
-
-        int seleccionNum = leerEnteroSimple("Seleccione la marca (número): ");
-
-        if (seleccionNum >= 1 && seleccionNum <= contadorMarcasUnicas) {
-            String marcaElegida = marcasUnicas[seleccionNum - 1];
-            int contadorFiltrados = 0;
-            for(int i=0; i < productosMamaBebe.length; i++){
-                if(productosMamaBebe[i].marca.equalsIgnoreCase(marcaElegida)){
-                    contadorFiltrados++;
-                }
-            }
-
-            if(contadorFiltrados == 0){
-                System.out.println("No hay productos de la marca " + marcaElegida);
-                return;
-            }
-
-            Producto[] productosFiltrados = new Producto[contadorFiltrados];
-            int indiceFiltrados = 0;
-            for (int i = 0; i < productosMamaBebe.length; i++) {
-                if (productosMamaBebe[i].marca.equalsIgnoreCase(marcaElegida)) {
-                    productosFiltrados[indiceFiltrados] = productosMamaBebe[i];
-                    indiceFiltrados++;
-                }
-            }
-            mostrarYAgregar(productosFiltrados, indiceFiltrados);
-        } else {
-            System.out.println("❌ Opción inválida.");
-        }
+        } while (opcion != 5);
     }
 
-    public static void filtrarPorPrecio() {
-        double min, max;
-        min = leerDoubleSimple("Ingrese precio mínimo: S/ ");
-        max = leerDoubleSimple("Ingrese precio máximo: S/ ");
+    public static void menuMamaBebe() {
+        int opcion;
+        do {
+            System.out.println("\n=== CATEGORÍA: MAMÁ Y BEBÉ ===");
+            System.out.println("1. Ver todos los productos");
+            System.out.println("2. Filtrar por marca");
+            System.out.println("3. Filtrar por precio");
+            System.out.println("4. Ver carrito");
+            System.out.println("5. Finalizar compra");
+            System.out.println("6. Atrás (Volver a Categorías)");
+            System.out.print("Ingrese su opción: ");
+            opcion = Integer.parseInt(scanner.nextLine().trim());
 
-        if(min < 0 || max < 0 || min > max){
-            System.out.println("❌ Rango de precios inválido.");
-            return;
-        }
-
-        int contadorFiltrados = 0;
-        for(int i=0; i < productosMamaBebe.length; i++){
-            if(productosMamaBebe[i].precio >= min && productosMamaBebe[i].precio <= max){
-                contadorFiltrados++;
+            switch (opcion) {
+                case 1:
+                    mostrarProductosDeCategoria("Mamá y Bebé", MAMA_BEBE_INICIO, MAMA_BEBE_FIN);
+                    break;
+                case 2:
+                    filtrarPorMarca("Mamá y Bebé", MAMA_BEBE_INICIO, MAMA_BEBE_FIN);
+                    break;
+                case 3:
+                    filtrarPorPrecio("Mamá y Bebé", MAMA_BEBE_INICIO, MAMA_BEBE_FIN);
+                    break;
+                case 4:
+                    verCarrito();
+                    break;
+                case 5:
+                    finalizarCompra();
+                    break;
+                case 6:
+                    System.out.println("Volviendo a Categorías...");
+                    break;
+                default:
+                    System.out.println("❌ Opción inválida. Por favor, intente de nuevo.");
             }
-        }
-
-        if (contadorFiltrados == 0) {
-            System.out.println("❌ No se encontraron productos en ese rango de precios.");
-            return;
-        }
-
-        Producto[] productosFiltrados = new Producto[contadorFiltrados];
-        int indiceFiltrados = 0;
-        for (int i = 0; i < productosMamaBebe.length; i++) {
-            if (productosMamaBebe[i].precio >= min && productosMamaBebe[i].precio <= max) {
-                productosFiltrados[indiceFiltrados] = productosMamaBebe[i];
-                indiceFiltrados++;
-            }
-        }
-        mostrarYAgregar(productosFiltrados, indiceFiltrados);
+        } while (opcion != 6);
     }
 
-    public static void mostrarYAgregar(Producto[] productosAMostrar, int cantidadAMostrar) {
-        if (cantidadAMostrar == 0) {
-            return;
-        }
-        for (int i = 0; i < cantidadAMostrar; i++) {
-            Producto p = productosAMostrar[i];
-            System.out.println((i + 1) + ". " + p.nombre + " (" + p.marca + ") - S/ " + String.format("%.2f", p.precio) + " - Stock: " + p.stock);
-        }
-
-        int eleccionNum = leerEnteroSimple("Seleccione producto para añadir al carrito (0 para cancelar): ");
-
-        if (eleccionNum > 0 && eleccionNum <= cantidadAMostrar) {
-            Producto productoOriginalSeleccionado = productosAMostrar[eleccionNum - 1];
-
-            if (productoOriginalSeleccionado.stock > 0) {
-                int cantidadAComprar = leerEnteroSimple("Ingrese cantidad: ");
-
-                if (cantidadAComprar > 0 && cantidadAComprar <= productoOriginalSeleccionado.stock) {
-                    if (numeroItemsEnCarrito + cantidadAComprar <= MAX_CARRITO_ITEMS) {
-                        for (int i = 0; i < cantidadAComprar; i++) {
-                            carrito[numeroItemsEnCarrito] = new Producto(productoOriginalSeleccionado.nombre, productoOriginalSeleccionado.marca, productoOriginalSeleccionado.precio, 1);
-                            numeroItemsEnCarrito++;
-                        }
-                        productoOriginalSeleccionado.stock -= cantidadAComprar;
-                        System.out.println("✅ " + cantidadAComprar + " unidades de '" + productoOriginalSeleccionado.nombre + "' añadidas al carrito.");
-                    } else {
-                        System.out.println("❌ No hay suficiente espacio en el carrito para " + cantidadAComprar + " unidades.");
-                    }
-                } else if (cantidadAComprar <=0) {
-                    System.out.println("❌ La cantidad debe ser mayor a cero.");
-                }
-                else {
-                    System.out.println("❌ Cantidad solicitada excede el stock disponible (" + productoOriginalSeleccionado.stock + ").");
-                }
+    public static void mostrarProductoParaCompra(String nombre, String marca, double precio) {
+        System.out.println("------------------------------------");
+        System.out.println("Producto: " + nombre + " (" + marca + ")");
+        System.out.println("Precio: S/ " + String.format("%.2f", precio));
+        System.out.println("------------------------------------");
+        System.out.print("¿Desea añadir " + nombre + " a su carrito? (s/n): ");
+        String respuesta = scanner.nextLine().trim().toLowerCase();
+        if (respuesta.equals("s")) {
+            System.out.print("Ingrese la cantidad que desea comprar de " + nombre + ": ");
+            int cantidad = Integer.parseInt(scanner.nextLine().trim());
+            if (cantidad > 0) {
+                añadirProductoAlCarrito(nombre, marca, precio, cantidad);
+                System.out.println("✅ " + cantidad + " unidad(es) de " + nombre + " añadidas al carrito.");
             } else {
-                System.out.println("❌ Producto sin stock.");
+                System.out.println("❌ Cantidad inválida. No se añadió el producto.");
             }
-        } else if (eleccionNum != 0) {
-            System.out.println("❌ Selección inválida.");
+        } else {
+            System.out.println("De acuerdo, no se añadió el producto.");
+        }
+    }
+
+    public static void mostrarProductosDeCategoria(String categoriaNombre, int inicioIndice, int finIndice) {
+        System.out.println("\n=== Productos en " + categoriaNombre + " ===");
+        if (inicioIndice == -1 || finIndice == -1 || inicioIndice > finIndice || inicioIndice < 0 || finIndice >= nombresProductos.length) {
+            System.out.println("No hay productos en esta categoría o los índices son inválidos.");
+            return;
+        }
+
+        for (int i = inicioIndice; i <= finIndice; i++) {
+            System.out.println((i - inicioIndice + 1) + ". " + nombresProductos[i] + " (" + marcasProductos[i] + ") - S/ " + String.format("%.2f", preciosProductos[i]));
+        }
+
+        System.out.print("Seleccione el número del producto que desea añadir al carrito (0 para volver): ");
+        int opcionProducto = Integer.parseInt(scanner.nextLine().trim());
+
+        if (opcionProducto >= 1 && opcionProducto <= (finIndice - inicioIndice + 1)) {
+            int indiceReal = inicioIndice + (opcionProducto - 1);
+            System.out.print("Ingrese la cantidad que desea comprar de " + nombresProductos[indiceReal] + ": ");
+            int cantidad = Integer.parseInt(scanner.nextLine().trim());
+            if (cantidad > 0) {
+                añadirProductoAlCarrito(nombresProductos[indiceReal], marcasProductos[indiceReal], preciosProductos[indiceReal], cantidad);
+                System.out.println("✅ " + cantidad + " unidad(es) de " + nombresProductos[indiceReal] + " añadidas al carrito.");
+            } else {
+                System.out.println("❌ Cantidad inválida. No se añadió el producto.");
+            }
+        } else if (opcionProducto != 0) {
+            System.out.println("❌ Opción de producto inválida.");
+        }
+    }
+
+    public static void añadirProductoAlCarrito(String nombre, String marca, double precio, int cantidad) {
+        boolean encontrado = false;
+        for (int i = 0; i < numeroTiposUnicosEnCarrito; i++) {
+            if (carritoNombres[i] != null && carritoNombres[i].equalsIgnoreCase(nombre) &&
+                    carritoMarcas[i] != null && carritoMarcas[i].equalsIgnoreCase(marca)) {
+                carritoCantidades[i] += cantidad;
+                encontrado = true;
+                break;
+            }
+        }
+
+        if (!encontrado) {
+            if (numeroTiposUnicosEnCarrito < MAX_ITEMS_CARRITO) {
+                carritoNombres[numeroTiposUnicosEnCarrito] = nombre;
+                carritoMarcas[numeroTiposUnicosEnCarrito] = marca;
+                carritoPreciosUnitarios[numeroTiposUnicosEnCarrito] = precio;
+                carritoCantidades[numeroTiposUnicosEnCarrito] = cantidad;
+                numeroTiposUnicosEnCarrito++;
+            } else {
+                System.out.println("❌ El carrito está lleno, no se pueden añadir más tipos de productos.");
+            }
         }
     }
 
     public static void verCarrito() {
-        if (numeroItemsEnCarrito == 0) {
-            System.out.println("🛒 El carrito está vacío.");
+        System.out.println("\n=== SU CARRITO DE COMPRAS ===");
+        if (numeroTiposUnicosEnCarrito == 0) {
+            System.out.println("El carrito está vacío.");
             return;
         }
-        System.out.println("\n=== Carrito de Compras ===");
 
-        Producto[] productosUnicos = new Producto[numeroItemsEnCarrito];
-        int[] cantidadesUnicas = new int[numeroItemsEnCarrito];
-        int contadorUnicos = 0;
-        boolean[] procesado = new boolean[numeroItemsEnCarrito];
-
-        for (int i = 0; i < numeroItemsEnCarrito; i++) {
-            if (procesado[i]) continue;
-
-            Producto actual = carrito[i];
-            int cantidadActual = 0;
-            for (int j = 0; j < numeroItemsEnCarrito; j++) {
-                if (carrito[j].esIgual(actual)) {
-                    cantidadActual++;
-                    procesado[j] = true;
-                }
+        double subtotalCarrito = 0.0;
+        for (int i = 0; i < numeroTiposUnicosEnCarrito; i++) {
+            if (carritoNombres[i] != null && carritoCantidades[i] > 0) {
+                double totalPorProducto = carritoCantidades[i] * carritoPreciosUnitarios[i];
+                System.out.println("- " + carritoNombres[i] + " (" + carritoMarcas[i] + ")");
+                System.out.println("  Cantidad: " + carritoCantidades[i] + " x S/ " + String.format("%.2f", carritoPreciosUnitarios[i]) + " = S/ " + String.format("%.2f", totalPorProducto));
+                subtotalCarrito += totalPorProducto;
             }
-            productosUnicos[contadorUnicos] = actual;
-            cantidadesUnicas[contadorUnicos] = cantidadActual;
-            contadorUnicos++;
-        }
-
-        double subtotalCarrito = 0;
-        for (int i = 0; i < contadorUnicos; i++) {
-            Producto p = productosUnicos[i];
-            int cantidad = cantidadesUnicas[i];
-            double totalProducto = p.precio * cantidad;
-            subtotalCarrito += totalProducto;
-            System.out.println(p.nombre + " (" + p.marca + ") - S/ " + String.format("%.2f", p.precio) + " x" + cantidad + " = S/ " + String.format("%.2f", totalProducto));
         }
         System.out.println("------------------------------------");
-        System.out.println("Subtotal del Carrito: S/ " + String.format("%.2f", subtotalCarrito));
+        System.out.println("Subtotal del carrito: S/ " + String.format("%.2f", subtotalCarrito));
+    }
+
+    public static void filtrarPorMarca(String categoriaNombre, int inicioIndice, int finIndice) {
+        System.out.println("\n=== Filtrar por Marca en " + categoriaNombre + " ===");
+
+        if (inicioIndice == -1 || finIndice == -1 || inicioIndice > finIndice) {
+            System.out.println("No hay productos para filtrar por marca en esta categoría.");
+            return;
+        }
+
+        System.out.println("Marcas disponibles en esta categoría:");
+        String[] marcasUnicas = new String[finIndice - inicioIndice + 1];
+        int countUnicas = 0;
+
+        for (int i = inicioIndice; i <= finIndice; i++) {
+            boolean yaExiste = false;
+            for (int j = 0; j < countUnicas; j++) {
+                if (marcasUnicas[j].equalsIgnoreCase(marcasProductos[i])) {
+                    yaExiste = true;
+                    break;
+                }
+            }
+            if (!yaExiste) {
+                marcasUnicas[countUnicas] = marcasProductos[i];
+                countUnicas++;
+            }
+        }
+
+        if (countUnicas == 0) {
+            System.out.println("No hay marcas disponibles para mostrar.");
+        } else {
+            for (int i = 0; i < countUnicas; i++) {
+                System.out.println("- " + marcasUnicas[i]);
+            }
+        }
+        System.out.println("------------------------------------");
+
+        System.out.print("Ingrese la marca a buscar: ");
+        String marcaBuscada = scanner.nextLine().trim();
+
+        System.out.println("\n--- Productos de la marca '" + marcaBuscada + "' ---");
+        boolean encontrado = false;
+        int[] indicesFiltrados = new int[finIndice - inicioIndice + 1];
+        int productosFiltradosCount = 0;
+
+        for (int i = inicioIndice; i <= finIndice; i++) {
+            if (marcasProductos[i].equalsIgnoreCase(marcaBuscada)) {
+                System.out.println((productosFiltradosCount + 1) + ". " + nombresProductos[i] + " (" + marcasProductos[i] + ") - S/ " + String.format("%.2f", preciosProductos[i]));
+                indicesFiltrados[productosFiltradosCount] = i;
+                productosFiltradosCount++;
+                encontrado = true;
+            }
+        }
+
+        if (!encontrado) {
+            System.out.println("No se encontraron productos con la marca '" + marcaBuscada + "' en esta categoría.");
+        } else {
+            System.out.print("Seleccione el número del producto que desea añadir al carrito (0 para volver): ");
+            int opcionProducto = Integer.parseInt(scanner.nextLine().trim());
+            if (opcionProducto >= 1 && opcionProducto <= productosFiltradosCount) {
+                int indiceReal = indicesFiltrados[opcionProducto - 1];
+                System.out.print("Ingrese la cantidad que desea comprar de " + nombresProductos[indiceReal] + ": ");
+                int cantidad = Integer.parseInt(scanner.nextLine().trim());
+                if (cantidad > 0) {
+                    añadirProductoAlCarrito(nombresProductos[indiceReal], marcasProductos[indiceReal], preciosProductos[indiceReal], cantidad);
+                    System.out.println("✅ " + cantidad + " unidad(es) de " + nombresProductos[indiceReal] + " añadidas al carrito.");
+                } else {
+                    System.out.println("❌ Cantidad inválida. No se añadió el producto.");
+                }
+            } else if (opcionProducto != 0) {
+                System.out.println("❌ Opción de producto inválida.");
+            }
+        }
+    }
+
+    public static void filtrarPorPrecio(String categoriaNombre, int inicioIndice, int finIndice) {
+        System.out.println("\n=== Filtrar por Precio en " + categoriaNombre + " ===");
+
+        if (inicioIndice == -1 || finIndice == -1 || inicioIndice > finIndice) {
+            System.out.println("No hay productos para filtrar por precio en esta categoría.");
+            return;
+        }
+
+        System.out.print("Ingrese el precio mínimo: S/ ");
+        double precioMin = Double.parseDouble(scanner.nextLine().trim());
+        System.out.print("Ingrese el precio máximo: S/ ");
+        double precioMax = Double.parseDouble(scanner.nextLine().trim());
+
+        if (precioMin > precioMax) {
+            System.out.println("❌ El precio mínimo no puede ser mayor que el precio máximo.");
+            return;
+        }
+
+        System.out.println("\n--- Productos entre S/ " + String.format("%.2f", precioMin) + " y S/ " + String.format("%.2f", precioMax) + " ---");
+        boolean encontrado = false;
+        int productosFiltradosCount = 0;
+        int[] indicesFiltrados = new int[finIndice - inicioIndice + 1];
+
+        for (int i = inicioIndice; i <= finIndice; i++) {
+            if (preciosProductos[i] >= precioMin && preciosProductos[i] <= precioMax) {
+                System.out.println((productosFiltradosCount + 1) + ". " + nombresProductos[i] + " (" + marcasProductos[i] + ") - S/ " + String.format("%.2f", preciosProductos[i]));
+                indicesFiltrados[productosFiltradosCount] = i;
+                productosFiltradosCount++;
+                encontrado = true;
+            }
+        }
+
+        if (!encontrado) {
+            System.out.println("No se encontraron productos en este rango de precios en esta categoría.");
+        } else {
+            System.out.print("Seleccione el número del producto que desea añadir al carrito (0 para volver): ");
+            int opcionProducto = Integer.parseInt(scanner.nextLine().trim());
+            if (opcionProducto >= 1 && opcionProducto <= productosFiltradosCount) {
+                int indiceReal = indicesFiltrados[opcionProducto - 1];
+                System.out.print("Ingrese la cantidad que desea comprar de " + nombresProductos[indiceReal] + ": ");
+                int cantidad = Integer.parseInt(scanner.nextLine().trim());
+                if (cantidad > 0) {
+                    añadirProductoAlCarrito(nombresProductos[indiceReal], marcasProductos[indiceReal], preciosProductos[indiceReal], cantidad);
+                    System.out.println("✅ " + cantidad + " unidad(es) de " + nombresProductos[indiceReal] + " añadidas al carrito.");
+                } else {
+                    System.out.println("❌ Cantidad inválida. No se añadió el producto.");
+                }
+            } else if (opcionProducto != 0) {
+                System.out.println("❌ Opción de producto inválida.");
+            }
+        }
     }
 
     public static void finalizarCompra() {
-        if (numeroItemsEnCarrito == 0) {
-            System.out.println("❌ El carrito está vacío. Nada que finalizar.");
+        System.out.println("\n=== FINALIZAR COMPRA ===");
+        if (numeroTiposUnicosEnCarrito == 0) {
+            System.out.println("El carrito está vacío. No se puede finalizar la compra.");
             return;
         }
 
-        Producto[] productosUnicosBoleta = new Producto[numeroItemsEnCarrito];
-        int[] cantidadesUnicasBoleta = new int[numeroItemsEnCarrito];
-        int contadorUnicosBoleta = 0;
-        boolean[] procesadoBoleta = new boolean[numeroItemsEnCarrito];
-
-        double subtotal = 0;
-        for(int i=0; i < numeroItemsEnCarrito; i++){
-            subtotal += carrito[i].precio;
+        double subtotalGeneral = 0.0;
+        System.out.println("\n---- DETALLE DE SU PEDIDO ----");
+        for (int i = 0; i < numeroTiposUnicosEnCarrito; i++) {
+            if (carritoNombres[i] != null && carritoCantidades[i] > 0) {
+                double totalPorProducto = carritoCantidades[i] * carritoPreciosUnitarios[i];
+                System.out.println("- " + carritoNombres[i] + " (" + carritoMarcas[i] + ")");
+                System.out.println("  Cant: " + carritoCantidades[i] + " x S/ " + String.format("%.2f", carritoPreciosUnitarios[i]) + " = S/ " + String.format("%.2f", totalPorProducto));
+                subtotalGeneral += totalPorProducto;
+            }
         }
 
-        for (int i = 0; i < numeroItemsEnCarrito; i++) {
-            if (procesadoBoleta[i]) continue;
-            Producto actual = carrito[i];
-            int cantidadActual = 0;
-            for (int j = 0; j < numeroItemsEnCarrito; j++) {
-                if (carrito[j].esIgual(actual)) {
-                    cantidadActual++;
-                    procesadoBoleta[j] = true;
+        double igv = subtotalGeneral * 0.18;
+        double totalAPagar = subtotalGeneral + igv;
+
+        System.out.println("------------------------------------");
+        System.out.println("Subtotal: S/ " + String.format("%.2f", subtotalGeneral));
+        System.out.println("IGV (18%): S/ " + String.format("%.2f", igv));
+        System.out.println("TOTAL A PAGAR: S/ " + String.format("%.2f", totalAPagar));
+        System.out.println("------------------------------------");
+
+        System.out.print("¿Desea envío a domicilio? (s/n): ");
+        String quiereDelivery = scanner.nextLine().trim().toLowerCase();
+        if (quiereDelivery.equals("s")) {
+            System.out.print("Ingrese su dirección de envío: ");
+            String direccion = scanner.nextLine();
+            System.out.println("✅ Envío a domicilio a '" + direccion + "' programado. Costo adicional se calculará en la entrega.");
+        }
+
+        System.out.println("\n--- Método de Pago ---");
+        System.out.println("1. Tarjeta");
+        System.out.println("2. Efectivo");
+        System.out.print("Seleccione su método de pago: ");
+        int opcionPago = Integer.parseInt(scanner.nextLine().trim());
+
+        double montoPagado = 0.0;
+        double vuelto = 0.0;
+        boolean pagoExitoso = false;
+
+        switch (opcionPago) {
+            case 1:
+                System.out.print("Ingrese la clave de su tarjeta (4 dígitos): ");
+                String claveIngresada = scanner.nextLine();
+                if (claveIngresada.equals(claveTarjeta)) {
+                    System.out.println("✅ Pago con tarjeta exitoso.");
+                    pagoExitoso = true;
+                    montoPagado = totalAPagar;
+                    vuelto = 0.0;
+                } else {
+                    System.out.println("❌ Clave de tarjeta incorrecta. Pago cancelado.");
+                }
+                break;
+            case 2:
+                System.out.print("Ingrese el monto en efectivo con el que va a pagar: S/ ");
+                montoPagado = Double.parseDouble(scanner.nextLine().trim());
+                if (montoPagado < totalAPagar) {
+                    System.out.println("❌ Monto insuficiente. El monto debe ser mayor o igual a S/ " + String.format("%.2f", totalAPagar));
+                    // Aquí no hay bucle para reintentar si el monto es insuficiente
+                    // Si el monto es incorrecto, el pago fallará
+                } else {
+                    vuelto = montoPagado - totalAPagar;
+                    System.out.println("✅ Pago en efectivo exitoso.");
+                    pagoExitoso = true;
+                }
+                break;
+            default:
+                System.out.println("❌ Opción de pago inválida. Pago cancelado.");
+        }
+
+        if (pagoExitoso) {
+            System.out.println("\n---- BOLETA DE VENTA ELECTRÓNICA ----");
+            System.out.println("Cliente: " + nombreRegistrado + " (DNI: " + dniRegistrado + ")");
+            System.out.println("------------------------------------");
+            for (int i = 0; i < numeroTiposUnicosEnCarrito; i++) {
+                if (carritoNombres[i] != null && carritoCantidades[i] > 0) {
+                    double totalPorProducto = carritoCantidades[i] * carritoPreciosUnitarios[i];
+                    System.out.println("- " + carritoNombres[i] + " (" + carritoMarcas[i] + ")");
+                    System.out.println("  Cant: " + carritoCantidades[i] + " x S/ " + String.format("%.2f", carritoPreciosUnitarios[i]) + " = S/ " + String.format("%.2f", totalPorProducto));
                 }
             }
-            productosUnicosBoleta[contadorUnicosBoleta] = actual;
-            cantidadesUnicasBoleta[contadorUnicosBoleta] = cantidadActual;
-            contadorUnicosBoleta++;
-        }
-
-        double igv = subtotal * 0.18;
-        double totalPagar = subtotal + igv;
-
-        System.out.println("\n--- Resumen de Compra ---");
-        for (int i = 0; i < contadorUnicosBoleta; i++) {
-            Producto p = productosUnicosBoleta[i];
-            int cantidad = cantidadesUnicasBoleta[i];
-            System.out.println(p.nombre + " (" + p.marca + ") - S/ " + String.format("%.2f", p.precio) + " x" + cantidad);
-        }
-        System.out.println("---------------------------");
-        System.out.println("Subtotal: S/ " + String.format("%.2f", subtotal));
-        System.out.println("IGV (18%): S/ " + String.format("%.2f", igv));
-        System.out.println("TOTAL A PAGAR: S/ " + String.format("%.2f", totalPagar));
-
-        System.out.print("\n¿Desea delivery? (s/n): ");
-        String delivery = papu.nextLine();
-        if (delivery.equalsIgnoreCase("s")) {
-            System.out.print("Ingrese dirección de entrega: ");
-            String direccion = papu.nextLine();
-            System.out.println("Se enviará a: " + direccion);
-        }
-
-        System.out.print("¿Pagar con tarjeta? (s/n): ");
-        String pagoTarjeta = papu.nextLine();
-        double vuelto = 0;
-        double efectivoRecibido = 0;
-
-        if (pagoTarjeta.equalsIgnoreCase("s")) {
-            System.out.print("Ingrese clave de tarjeta ("+ claveTarjeta.substring(0,1) +"***" +"): ");
-            String claveIngresada = papu.nextLine();
-            if (!claveIngresada.equals(claveTarjeta)) {
-                System.out.println("❌ Clave de tarjeta incorrecta. Compra cancelada.");
-                return;
-            }
-            System.out.println("Pago con tarjeta exitoso.");
-            vuelto = 0;
-        } else {
-            efectivoRecibido = leerDoubleSimple("Ingrese monto en efectivo: S/ ");
-
-            if (efectivoRecibido < totalPagar) {
-                System.out.println("❌ Monto insuficiente. Compra cancelada.");
-                return;
-            }
-            vuelto = efectivoRecibido - totalPagar;
-            System.out.println("Pago en efectivo. Su vuelto es S/ " + String.format("%.2f", vuelto));
-        }
-
-        System.out.println("\n🧾 BOLETA DE VENTA ELECTRÓNICA");
-        System.out.println("------------------------------------");
-        System.out.println("Cliente: " + nombreRegistrado);
-        System.out.println("DNI: " + dniRegistrado);
-        System.out.println("------------------------------------");
-        System.out.println("Productos:");
-        for (int i = 0; i < contadorUnicosBoleta; i++) {
-            Producto p = productosUnicosBoleta[i];
-            int cantidad = cantidadesUnicasBoleta[i];
-            double totalPorProducto = p.precio * cantidad;
-            System.out.println("- " + p.nombre + " (" + p.marca + ")");
-            System.out.println("  Cant: " + cantidad + " x S/ " + String.format("%.2f", p.precio) + " = S/ " + String.format("%.2f", totalPorProducto));
-        }
-        System.out.println("------------------------------------");
-        System.out.println("Subtotal: S/ " + String.format("%.2f", subtotal));
-        System.out.println("IGV (18%): S/ " + String.format("%.2f", igv));
-        System.out.println("TOTAL: S/ " + String.format("%.2f", totalPagar));
-        if (!pagoTarjeta.equalsIgnoreCase("s")) {
-            System.out.println("Efectivo recibido: S/ " + String.format("%.2f", efectivoRecibido));
+            System.out.println("------------------------------------");
+            System.out.println("Subtotal: S/ " + String.format("%.2f", subtotalGeneral));
+            System.out.println("IGV (18%): S/ " + String.format("%.2f", igv));
+            System.out.println("TOTAL: S/ " + String.format("%.2f", totalAPagar));
+            System.out.println("Monto Pagado: S/ " + String.format("%.2f", montoPagado));
             System.out.println("Vuelto: S/ " + String.format("%.2f", vuelto));
+            System.out.println("------------------------------------");
+            System.out.println("✅ ¡Compra finalizada exitosamente! Gracias por su preferencia.");
+            totalComprasRealizadas++;
+            numeroTiposUnicosEnCarrito = 0;
+            for (int i = 0; i < MAX_ITEMS_CARRITO; i++) {
+                carritoNombres[i] = null;
+                carritoMarcas[i] = null;
+                carritoPreciosUnitarios[i] = 0.0;
+                carritoCantidades[i] = 0;
+            }
+        } else {
+            System.out.println("La compra ha sido cancelada.");
         }
-        System.out.println("------------------------------------");
-        System.out.println("✅ ¡Compra finalizada exitosamente!");
-        System.out.println("Gracias por su preferencia, " + nombreRegistrado + ".");
-
-        for(int i=0; i < numeroItemsEnCarrito; i++){
-            carrito[i] = null;
-        }
-        numeroItemsEnCarrito = 0;
     }
 }
